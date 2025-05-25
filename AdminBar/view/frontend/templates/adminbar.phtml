@@ -1,20 +1,16 @@
 <?php
 /** @var \Flux\AdminBar\Block\Adminbar $block */
+/** @var \Magento\Framework\Escaper $escaper */
 
 // Debug can be enabled by adding ?flux_debug=1 to the URL
 $isDebug = isset($_GET['flux_debug']) && $_GET['flux_debug'] == 1;
 
-// Early return if admin bar should not be displayed and not in debug mode
-if (!$block->shouldDisplay() && !$isDebug) {
-    return;
-}
+// Get admin dashboard URL
+$adminDashboardUrl = $block->getAdminDashboardUrl();
 
 // Get current entities
 $currentProduct = $block->getCurrentProduct();
 $currentCmsPage = $block->getCurrentCmsPage();
-
-// Get admin dashboard URL
-$adminDashboardUrl = $block->getAdminDashboardUrl();
 
 // Set context-specific edit URL 
 $editUrl = null;
@@ -27,108 +23,77 @@ if ($currentProduct) {
     $editUrl = $block->getCmsPageEditUrl((int)$currentCmsPage->getId());
     $contextLabel = __('Edit CMS Page');
 }
+
+// Admin status URL (frontend controller)
+$statusUrl = $block->getUrl('fluxadminbar/auth/status');
 ?>
 
-<style>
-/* Adminbar styles - kept minimal and inline for performance */
-.flux-adminbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 9999;
-    height: 32px;
-    background-color: #23282d;
-    color: #ccc;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 32px;
-}
-
-.flux-adminbar-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 10px;
-    display: flex;
-    align-items: center;
-}
-
-.flux-adminbar a {
-    color: #ccc;
-    text-decoration: none;
-    height: 32px;
-    padding: 0 8px;
-    display: inline-block;
-}
-
-.flux-adminbar a:hover {
-    color: #00b9eb;
-    background-color: #32373c;
-}
-
-.flux-adminbar-logo {
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.flux-adminbar-edit {
-    margin-left: auto;
-}
-
-.flux-adminbar-debug {
-    background-color: #f44336;
-    color: white;
-    padding: 0 8px;
-}
-
-body {
-    margin-top: 32px;
-}
-
-@media screen and (max-width: 782px) {
-    .flux-adminbar {
-        height: 46px;
-        line-height: 46px;
-    }
-    .flux-adminbar a {
-        height: 46px;
-    }
-    body {
-        margin-top: 46px;
-    }
-}
-</style>
-
-<div class="flux-adminbar">
-    <div class="flux-adminbar-wrapper">
-        <div class="flux-adminbar-logo">
-            <a href="<?= $block->escapeUrl($adminDashboardUrl) ?>">
-                <?= $block->escapeHtml(__('Magento Admin')) ?>
+<div x-data="adminBar" x-init="init()" x-show="visible" x-cloak
+     class="fixed top-0 left-0 right-0 z-50 h-8 bg-gray-800 text-gray-300 font-sans text-sm shadow-md"
+     style="display: none;">
+    <div class="max-w-7xl mx-auto px-2 flex items-center h-full">
+        <div class="font-semibold">
+            <a href="<?= $escaper->escapeUrl($adminDashboardUrl) ?>" 
+               class="px-3 h-8 inline-flex items-center hover:text-blue-300 hover:bg-gray-700 transition duration-150">
+                <?= $escaper->escapeHtml(__('Magento Admin')) ?>
             </a>
         </div>
         
         <?php if ($editUrl): ?>
-        <div class="flux-adminbar-edit">
-            <a href="<?= $block->escapeUrl($editUrl) ?>">
-                <?= $block->escapeHtml($contextLabel) ?>
+        <div class="ml-auto">
+            <a href="<?= $escaper->escapeUrl($editUrl) ?>" 
+               class="px-3 h-8 inline-flex items-center hover:text-blue-300 hover:bg-gray-700 transition duration-150">
+                <?= $escaper->escapeHtml($contextLabel) ?>
             </a>
         </div>
         <?php endif; ?>
         
         <?php if ($isDebug): ?>
-        <div class="flux-adminbar-debug">
-            <?= $block->escapeHtml(__('DEBUG MODE')) ?>
+        <div class="bg-red-600 text-white px-2">
+            <?= $escaper->escapeHtml(__('DEBUG MODE')) ?>
         </div>
         <?php endif; ?>
+        
+        <div x-show="isLoading" class="ml-2">
+            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
     </div>
 </div>
 
 <?php if ($isDebug): ?>
-<div style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 10px; z-index: 9999; font-family: monospace; font-size: 12px;">
-    <h3>AdminBar Debug</h3>
-    <p>shouldDisplay: <?= $block->shouldDisplay() ? 'true' : 'false' ?></p>
-    <p>Admin Session isLoggedIn: <?= $block->getAdminSession()->isLoggedIn() ? 'true' : 'false' ?></p>
+<div class="fixed bottom-0 left-0 right-0 bg-black bg-opacity-80 text-white p-3 z-50 font-mono text-xs">
+    <h3 class="text-lg font-bold">AdminBar Debug</h3>
+    <p>shouldDisplay (PHP): <?= $block->shouldDisplay() ? 'true' : 'false' ?></p>
+    <p>Admin Session isLoggedIn (PHP): <?= $block->getAdminSession()->isLoggedIn() ? 'true' : 'false' ?></p>
     <p>App State Mode: <?= $block->getAppState()->getMode() ?></p>
+    <div x-show="!isLoading">
+        <p>isLoggedIn (AJAX): <span x-text="isLoggedIn ? 'true' : 'false'"></span></p>
+        <p>userId (AJAX): <span x-text="userId || 'null'"></span></p>
+    </div>
 </div>
-<?php endif; ?> 
+<?php endif; ?>
+
+<style>
+body {
+    margin-top: 32px;
+}
+@media screen and (max-width: 782px) {
+    body {
+        margin-top: 46px;
+    }
+}
+[x-cloak] { display: none !important; }
+</style>
+
+<script type="text/x-magento-init">
+{
+    "*": {
+        "Flux_AdminBar/js/adminBar": {
+            "statusUrl": "<?= $escaper->escapeJs($statusUrl) ?>"
+        }
+    }
+}
+</script> 

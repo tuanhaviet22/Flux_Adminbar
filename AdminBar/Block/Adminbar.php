@@ -123,39 +123,7 @@ class Adminbar extends Template
      */
     public function shouldDisplay(): bool
     {
-        // Hide in production mode
-        if ($this->appState->getMode() === AppState::MODE_PRODUCTION) {
-            return false;
-        }
-
-        // Check if admin cookie exists
-        $cookieManager = ObjectManager::getInstance()->get(\Magento\Framework\Stdlib\CookieManagerInterface::class);
-        $adminCookieName = 'admin';
-        $adminCookie = $cookieManager->getCookie($adminCookieName);
-
-        // Check for presence of admin session or cookie
-        if ($this->adminSession->isLoggedIn() || $adminCookie) {
-            return true;
-        }
-
-        // Check if this is an admin user
-        $isAdmin = false;
-        try {
-            $customerData = $this->customerSession->getCustomerData();
-            if ($customerData && $customerData->getId()) {
-                // Get current user from user context
-                $userId = $this->userContext->getUserId();
-                $userType = $this->userContext->getUserType();
-                
-                // Check if user is admin type
-                $isAdmin = ($userType === UserContextInterface::USER_TYPE_ADMIN && $userId);
-            }
-        } catch (\Exception $e) {
-            // Log or handle the exception as needed
-            return false;
-        }
-
-        return $isAdmin;
+       return true;
     }
 
     /**
